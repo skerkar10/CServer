@@ -1,14 +1,11 @@
-//Network includes
-#include <netinet/in.h>
-#include <sys/_types/_socklen_t.h>
-#include <sys/_types/_ssize_t.h>
-#include <sys/socket.h>
-
 //Multithreading
 #include <pthread.h>
+#include <stdlib.h>
 
 //Helper files
 #include "Helper.h"
+
+volatile int serverActive = 1;
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -46,7 +43,7 @@ int main(int argc, char** argv) {
 
   printf("Listening for connection on port# %d\n", atoi(argv[1]));
 
-  for (;;) {
+  while (serverActive) {
     struct sockaddr Client = {0};
     socklen_t clientLen = sizeof(Client);
 
@@ -58,41 +55,11 @@ int main(int argc, char** argv) {
 
     printf("Connection successful on port# %d\n", atoi(argv[1]));
 
-    char buffer[BUFFER_SIZE];
-    char response[BUFFER_SIZE];
+    ClientADT* currentClient = malloc(sizeof(ClientADT));
+    currentClient->clientObj = Client;
+    currentClient->socket = clientSfd;
 
-    const char* initMessage = "Enter a message: ";
-    const char* init = "Welcome to Sahil's server. Enter 'exit' to quit or 'close' to close server.\n";
-    send(clientSfd, init, strlen(init), 0);
-
-    for (;;) {
-      clearBuffers(buffer, response);
-
-      send(clientSfd, initMessage, strlen(initMessage), 0);
-      ssize_t rec = recv(clientSfd, buffer, BUFFER_SIZE - 1, 0);
-      if (rec <= 0) {
-        printf(ERROR_COLOR "Client disconnected!\n" RESET_COLOR);
-        break;
-      }
-
-      buffer[strcspn(buffer, "\n")] = 0;
-
-      if (strcmp(buffer, "exit") == 0) {
-        printf(ERROR_COLOR "Client quit!\n" RESET_COLOR);
-        break;
-      }
-      
-      if (strcmp(buffer, "close") == 0) {
-        printf(ERROR_COLOR "Closing Server. Goodbye!\n");
-        close(socketfd);
-        close(clientSfd);
-        exit(0);
-      }
-
-      snprintf(response, BUFFER_SIZE, "Server received: %s\n", buffer);
-
-      send(clientSfd, response, strlen(response), 0);
-    }
+    handleClient((void*)currentClient);
 
     close(clientSfd);
   }

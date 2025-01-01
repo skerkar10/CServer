@@ -6,10 +6,20 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #define ERROR_COLOR "\x1b[31m"
 #define RESET_COLOR "\x1b[0m"
 #define BUFFER_SIZE 1024
 
+struct ClientADT {
+  struct sockaddr clientObj;
+  int socket;
+}; typedef struct ClientADT ClientADT;
+
 void clearBuffers(char* a, char* b);
+
+void* handleClient(void* clientArgs);
 
 #endif

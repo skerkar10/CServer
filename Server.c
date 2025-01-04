@@ -1,16 +1,17 @@
-//Multithreading
-#include <pthread.h>
-#include <stdlib.h>
-
-//Helper files
 #include "Helper.h"
 
-volatile int serverActive = 1;
+volatile int serverRunning = 1;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void throw(char* errorInput) {
+  fprintf(stderr, ERROR_COLOR "%s\n", errorInput);
+  exit(1);
+}
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    fprintf(stderr, ERROR_COLOR "Enter only the desired port number as a command line argument!\n");
-    return 1;
+    throw("Enter only the desired port number as a command line argument!");
   }
 
   struct sockaddr_in Server = {0};
@@ -22,14 +23,12 @@ int main(int argc, char** argv) {
 
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
   if (socketfd < 0) {
-    perror("Failed to create socket\n");
-    return 1;
+    throw("Failed to create socket");
   }
 
   int bindRes = bind(socketfd, (struct sockaddr*)&Server, serverLen);
   if (bindRes < 0) {
-    perror("Failed to bind to socket\n");
-    return 1;
+    throw("Failed to bind to socket");
   }
 
   const int ONE = 1;
@@ -37,33 +36,37 @@ int main(int argc, char** argv) {
 
   int lisRes = listen(socketfd, 10);
   if (lisRes < 0) {
-    perror("Failed to listen on socket\n");
-    return 1;
+    throw("Failed to listen on socket");
   }
 
   printf("Listening for connection on port# %d\n", atoi(argv[1]));
 
-  while (serverActive) {
+  while (serverRunning) {
     struct sockaddr Client = {0};
     socklen_t clientLen = sizeof(Client);
 
     int clientSfd = accept(socketfd, (struct sockaddr*)&Client, &clientLen);
     if (clientSfd < 0) {
-      perror("Could not accept connection\n");
+      printf(ERROR_COLOR "Could not accept connection from client!\n" RESET_COLOR);
       continue;
     }
 
-    printf("Connection successful on port# %d\n", atoi(argv[1]));
+    pthread_mutex_lock(&mutex);
+    printf(GREEN_COLOR "Connection successful on port# %d\n" RESET_COLOR, atoi(argv[1]));
+    pthread_mutex_unlock(&mutex);
 
     ClientADT* currentClient = malloc(sizeof(ClientADT));
-    currentClient->clientObj = Client;
+    currentClient->clientData = Client;
     currentClient->socket = clientSfd;
 
-    handleClient((void*)currentClient);
+    pthread_t currentThread;
 
-    close(clientSfd);
+    pthread_create(&currentThread, NULL, handleClient, (void*)currentClient);
+
+    pthread_detach(currentThread);
   }
 
+  pthread_mutex_destroy(&mutex);
   close(socketfd);
   return 0;
 }

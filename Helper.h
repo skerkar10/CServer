@@ -6,15 +6,19 @@
 #include <string.h>
 #include <unistd.h>
 
+//Multithreading
+#include <pthread.h>
+
 #include <netinet/in.h>
 #include <sys/socket.h>
 
 #define ERROR_COLOR "\x1b[31m"
 #define RESET_COLOR "\x1b[0m"
+#define GREEN_COLOR "\e[0;32m"
 #define BUFFER_SIZE 1024
 
 struct ClientADT {
-  struct sockaddr clientObj;
+  struct sockaddr clientData;
   int socket;
 }; typedef struct ClientADT ClientADT;
 

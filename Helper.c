@@ -1,8 +1,4 @@
 #include "Helper.h"
-#include <netinet/in.h>
-#include <stdio.h>
-#include <sys/_types/_socklen_t.h>
-#include <sys/socket.h>
 
 extern volatile int serverRunning;
 extern pthread_mutex_t mutex;

@@ -1,4 +1,8 @@
 #include "Helper.h"
+#include <netinet/in.h>
+#include <stdio.h>
+#include <sys/_types/_socklen_t.h>
+#include <sys/socket.h>
 
 extern volatile int serverRunning;
 extern pthread_mutex_t mutex;
@@ -43,8 +47,28 @@ void* handleClient(void* clientArgs) {
     if (strcmp(buffer, "close") == 0) {
       pthread_mutex_lock(&mutex);
       printf(ERROR_COLOR "Closing Server. Goodbye!\n");
-      pthread_mutex_unlock(&mutex);
       serverRunning = 0;
+      pthread_mutex_unlock(&mutex);
+
+      /*
+      * This will fix the bug of the server not closing instantly after a
+      * close message. This will work by creating a quick connection to the
+      * server to unblock the accept
+      */
+      int tempSock = socket(AF_INET, SOCK_STREAM, 0);
+      struct sockaddr_in tempServ = {0};
+      socklen_t tempServLen = sizeof(tempServ);
+      tempServ.sin_family = AF_INET;
+      tempServ.sin_port = htons(currentClient->portNumber);
+      tempServ.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+      int response = connect(tempSock, (struct sockaddr*)&tempServ, tempServLen);
+      if (response < 0) {
+        printf(ERROR_COLOR "\nFailed to terminate server. Please kill server process manually!\n" RESET_COLOR);
+      }
+
+      close(tempSock);
+
       break;
     }
 
@@ -58,7 +82,7 @@ void* handleClient(void* clientArgs) {
   * instead of just randomly kicking them off.
   */
   if (serverRunning == 0) {
-    char* closingBuffer = "\nServer was closed! Goodbye.\n";
+    const char* closingBuffer = "\nServer was closed! Goodbye.\n";
     send(currentClient->socket, closingBuffer, strlen(closingBuffer), 0);
   }
 

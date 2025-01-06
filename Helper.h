@@ -20,6 +20,7 @@
 struct ClientADT {
   struct sockaddr clientData;
   int socket;
+  int portNumber;
 }; typedef struct ClientADT ClientADT;
 
 void clearBuffers(char* a, char* b);

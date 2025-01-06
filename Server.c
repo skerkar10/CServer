@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     socklen_t clientLen = sizeof(Client);
 
     int clientSfd = accept(socketfd, (struct sockaddr*)&Client, &clientLen);
-    if (clientSfd < 0) {
+    if (clientSfd < 0 && serverRunning) {
       printf(ERROR_COLOR "Could not accept connection from client!\n" RESET_COLOR);
       continue;
     }
@@ -58,6 +58,7 @@ int main(int argc, char** argv) {
     ClientADT* currentClient = malloc(sizeof(ClientADT));
     currentClient->clientData = Client;
     currentClient->socket = clientSfd;
+    currentClient->portNumber = atoi(argv[1]);
 
     pthread_t currentThread;
 
@@ -70,3 +71,4 @@ int main(int argc, char** argv) {
   close(socketfd);
   return 0;
 }
+

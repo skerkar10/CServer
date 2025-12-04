@@ -17,11 +17,11 @@
 #define GREEN_COLOR "\e[0;32m"
 #define BUFFER_SIZE 1024
 
-struct ClientADT {
+typedef struct {
   struct sockaddr clientData;
   int socket;
   int portNumber;
-}; typedef struct ClientADT ClientADT;
+} ClientADT;
 
 void clearBuffers(char* a, char* b);
 
